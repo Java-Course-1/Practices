@@ -1,4 +1,5 @@
 package com.dereban.proxy.dto;
+
 public class ProxyConfigHolder {
     private ProxyNetworkConfig networkConfig;
     private ProxyCredentials credentials;
