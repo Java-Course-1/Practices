@@ -1,78 +1,91 @@
 package com.dereban.proxy.dto;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Компактный конфиг WebDriver.
+ *
+ * Внутри всего три «контейнера»:
+ *   - Map<String, String> settings — все простые настройки (browserName, headless, timeouts);
+ *   - List<String> browserArguments — аргументы командной строки;
+ *   - ProxyConfigHolder proxyConfig — типизированный прокси.
+ *
+ * Создаётся через WebDriverConfig.builder() с цепочкой методов.
+ * Никаких 12 геттеров/сеттеров и громоздкого конструктора больше нет.
+ *
+ * Trade-off: type-safety мы потеряли — всё, кроме прокси, стало строками.
+ * Пользоваться через ключи: cfg.get("browserName").
+ *
+ * LinkedHashMap, а не HashMap — чтобы порядок добавления сохранялся (важно для вывода).
+ */
 public class WebDriverConfig {
-    private String browserName;
-    private String browserVersion;
-    private boolean isHeadless;
-    private int implicitWaitSeconds;
-    private int pageLoadTimeoutSeconds;
 
+    private final Map<String, String> settings = new LinkedHashMap<>();
+    private final List<String> browserArguments = new ArrayList<>();
     private ProxyConfigHolder proxyConfig;
 
-    public WebDriverConfig() {
-    }
-    public WebDriverConfig(String browserName, String browserVersion, boolean isHeadless, int implicitWaitSeconds, int pageLoadTimeoutSeconds, ProxyConfigHolder proxyConfig) {
-        this.browserName = browserName;
-        this.browserVersion = browserVersion;
-        this.isHeadless = isHeadless;
-        this.implicitWaitSeconds = implicitWaitSeconds;
-        this.pageLoadTimeoutSeconds = pageLoadTimeoutSeconds;
-        this.proxyConfig = proxyConfig;
+    private WebDriverConfig() {
+        // создаётся только через builder()
     }
 
-    public String getBrowserName() {
-        return browserName;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public String getBrowserVersion() {
-        return browserVersion;
+    // --- чтение --------------------------------------------------------
+
+    public String get(String key) {
+        return settings.get(key);
     }
 
-    public boolean isHeadless() {
-        return isHeadless;
+    public Map<String, String> getSettings() {
+        return settings;
     }
 
-    public int getImplicitWaitSeconds() {
-        return implicitWaitSeconds;
-    }
-
-    public int getPageLoadTimeoutSeconds() {
-        return pageLoadTimeoutSeconds;
+    public List<String> getBrowserArguments() {
+        return browserArguments;
     }
 
     public ProxyConfigHolder getProxyConfig() {
         return proxyConfig;
     }
-    public void setBrowserName(String browserName) {
-        this.browserName = browserName;
-    }
-    public void setBrowserVersion(String browserVersion) {
-        this.browserVersion = browserVersion;
-    }
-    public void setHeadless(boolean headless) {
-        this.isHeadless = headless;
-    }
-    public void setImplicitWaitSeconds(int implicitWaitSeconds) {
-        this.implicitWaitSeconds = implicitWaitSeconds;
-    }
-    public void setPageLoadTimeoutSeconds(int pageLoadTimeoutSeconds) {
-        this.pageLoadTimeoutSeconds = pageLoadTimeoutSeconds;
-    }
-    public void setProxyConfig(ProxyConfigHolder proxyConfig) {
-        this.proxyConfig = proxyConfig;
-    }
 
     @Override
     public String toString() {
-        return "WebDriverConfig{" +
-                "browserName='" + browserName + '\'' +
-                ", browserVersion='" + browserVersion + '\'' +
-                ", isHeadless=" + isHeadless +
-                ", implicitWaitSeconds=" + implicitWaitSeconds +
-                ", pageLoadTimeoutSeconds=" + pageLoadTimeoutSeconds +
-                ", proxyConfig=" + proxyConfig +
-                '}';
+        return "WebDriverConfig{settings=" + settings
+                + ", arguments=" + browserArguments
+                + ", proxy=" + proxyConfig + "}";
     }
 
+    // --- Builder -------------------------------------------------------
+
+    public static final class Builder {
+
+        private final WebDriverConfig cfg = new WebDriverConfig();
+
+        /** Добавить любую скалярную настройку: .set("browserName", "chrome"). */
+        public Builder set(String key, String value) {
+            cfg.settings.put(key, value);
+            return this;
+        }
+
+        /** Добавить один аргумент командной строки браузера. */
+        public Builder addArgument(String arg) {
+            cfg.browserArguments.add(arg);
+            return this;
+        }
+
+        /** Указать прокси (остался типизированным — это не строка). */
+        public Builder proxy(ProxyConfigHolder proxy) {
+            cfg.proxyConfig = proxy;
+            return this;
+        }
+
+        public WebDriverConfig build() {
+            return cfg;
+        }
+    }
 }

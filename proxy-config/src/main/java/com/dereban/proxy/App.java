@@ -5,34 +5,64 @@ import com.dereban.proxy.dto.ProxyCredentials;
 import com.dereban.proxy.dto.ProxyNetworkConfig;
 import com.dereban.proxy.dto.WebDriverConfig;
 
+import java.util.Map;
+
 public class App {
 
     // Ширина таблицы — одна константа, легко менять
-    static final int WIDTH = 42;
+    static final int WIDTH = 50;
 
     public static void main(String[] args) {
 
-        ProxyNetworkConfig networkConfig = new ProxyNetworkConfig("proxy.example.com", 8080);
-        ProxyCredentials credentials = new ProxyCredentials("user123", "pass123");
-        ProxyConfigHolder configHolder = new ProxyConfigHolder(networkConfig, credentials);
-        WebDriverConfig webDriverConfig = new WebDriverConfig("chrome", "latest", true, 10, 30, configHolder);
+        ProxyConfigHolder proxy = new ProxyConfigHolder(
+                new ProxyNetworkConfig("proxy.example.com", 8080),
+                new ProxyCredentials("user123", "pass123")
+        );
+
+        // Всё, что раньше шло позиционными аргументами в конструктор,
+        // теперь — пары ключ-значение через .set(...). Порядок не важен,
+        // ничего не перепутаешь, лишнее можно не указывать.
+        WebDriverConfig cfg = WebDriverConfig.builder()
+                .set("browserName",    "chrome")
+                .set("browserVersion", "latest")
+                .set("headless",       "true")
+                .set("implicitWait",   "10 sec")
+                .set("pageTimeout",    "30 sec")
+                .addArgument("--no-sandbox")
+                .addArgument("--disable-gpu")
+                .addArgument("--window-size=1920,1080")
+                .addArgument("--lang=ru")
+                .proxy(proxy)
+                .build();
+
+        // --- ВЫВОД ---
 
         printHeader("WEBDRIVER CONFIGURATION");
 
+        // Скалярные настройки — один цикл по Map. Никаких 5 ручных printField.
         printSection("Browser Settings");
-        printField("Browser Name",    webDriverConfig.getBrowserName());
-        printField("Browser Version", webDriverConfig.getBrowserVersion());
-        printField("Headless Mode",   String.valueOf(webDriverConfig.isHeadless()));
-        printField("Implicit Wait",   webDriverConfig.getImplicitWaitSeconds() + " sec");
-        printField("Page Timeout",    webDriverConfig.getPageLoadTimeoutSeconds() + " sec");
+        for (Map.Entry<String, String> e : cfg.getSettings().entrySet()) {
+            printField(e.getKey(), e.getValue());
+        }
 
+        // Прокси-секции типизированные — через геттеры records.
         printSection("Proxy Network");
-        printField("Host", webDriverConfig.getProxyConfig().getNetworkConfig().getHost());
-        printField("Port", String.valueOf(webDriverConfig.getProxyConfig().getNetworkConfig().getPort()));
+        printField("Host", cfg.getProxyConfig().network().host());
+        printField("Port", String.valueOf(cfg.getProxyConfig().network().port()));
 
         printSection("Proxy Credentials");
-        printField("Username", webDriverConfig.getProxyConfig().getCredentials().getUsername());
+        printField("Username", cfg.getProxyConfig().credentials().username());
         printField("Password", "[PROTECTED]");
+
+        // Аргументы — цикл по списку.
+        printSection("Browser Arguments");
+        if (cfg.getBrowserArguments().isEmpty()) {
+            printField("(none)", "");
+        } else {
+            for (String arg : cfg.getBrowserArguments()) {
+                printField("set", arg);
+            }
+        }
 
         printFooter();
     }
@@ -52,7 +82,6 @@ public class App {
     }
 
     static void printField(String label, String value) {
-        // Формируем строку вручную чтобы контролировать точную ширину
         String content = "    " + padRight(label, 15) + ": " + value;
         System.out.println("| " + padRight(content, WIDTH - 1) + "|");
     }
@@ -64,11 +93,10 @@ public class App {
         System.out.println();
     }
 
-    // Вспомогательный метод — добавляет пробелы справа до нужной длины
-    // Если текст длиннее — обрезает
+    // Добавляет пробелы справа до нужной длины; длинное НЕ обрезает.
     static String padRight(String text, int length) {
         if (text.length() >= length) {
-            return text.substring(0, length);
+            return text;
         }
         return text + " ".repeat(length - text.length());
     }
