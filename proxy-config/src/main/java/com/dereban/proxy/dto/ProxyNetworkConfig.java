@@ -1,18 +1,28 @@
 package com.dereban.proxy.dto;
 
 /**
- * DTO для сетевого конфига прокси: host + port.
- *
- * Реализовано как record. Внутри объявлен "компактный" конструктор
- * (имя record + скобки без параметров), в котором мы проверяем порт.
- * После проверки компилятор сам присвоит this.host = host и this.port = port —
- * руками писать присваивания НЕ нужно, это особенность records.
+ * DTO: сетевой конфиг прокси (host + port).
  */
-public record ProxyNetworkConfig(String host, int port) {
+public class ProxyNetworkConfig {
 
-    public ProxyNetworkConfig {
-        if (port < 0 || port > 65535) {
-            throw new IllegalArgumentException("port out of range: " + port);
-        }
+    private final String host;
+    private final int port;
+
+    public ProxyNetworkConfig(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    @Override
+    public String toString() {
+        return "ProxyNetworkConfig{host='" + host + "', port=" + port + '}';
     }
 }

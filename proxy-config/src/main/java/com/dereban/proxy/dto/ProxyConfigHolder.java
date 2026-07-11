@@ -1,10 +1,29 @@
 package com.dereban.proxy.dto;
 
 /**
- * DTO-обёртка над сетью + учётками.
- * Тоже отлично ложится на record — это просто пара значений.
- *
- * Геттеры теперь называются: network() и credentials().
+ * DTO: пара сетевой конфиг + учётные данные.
  */
-public record ProxyConfigHolder(ProxyNetworkConfig network, ProxyCredentials credentials) {
+public class ProxyConfigHolder {
+
+    private final ProxyNetworkConfig networkConfig;
+    private final ProxyCredentials credentials;
+
+    public ProxyConfigHolder(ProxyNetworkConfig networkConfig, ProxyCredentials credentials) {
+        this.networkConfig = networkConfig;
+        this.credentials = credentials;
+    }
+
+    public ProxyNetworkConfig getNetworkConfig() {
+        return networkConfig;
+    }
+
+    public ProxyCredentials getCredentials() {
+        return credentials;
+    }
+
+    @Override
+    public String toString() {
+        return "ProxyConfigHolder{networkConfig=" + networkConfig
+                + ", credentials=" + credentials + '}';
+    }
 }

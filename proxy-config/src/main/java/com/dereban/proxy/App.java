@@ -1,70 +1,90 @@
 package com.dereban.proxy;
 
+import com.dereban.proxy.dto.ActionType;
 import com.dereban.proxy.dto.ProxyConfigHolder;
 import com.dereban.proxy.dto.ProxyCredentials;
 import com.dereban.proxy.dto.ProxyNetworkConfig;
+import com.dereban.proxy.dto.Scenario;
+import com.dereban.proxy.dto.Step;
+import com.dereban.proxy.dto.ThreadPoolConfig;
 import com.dereban.proxy.dto.WebDriverConfig;
+import com.dereban.proxy.pubsub.Publisher;
 
-import java.util.Map;
+import java.util.List;
 
 public class App {
 
-    // Ширина таблицы — одна константа, легко менять
     static final int WIDTH = 50;
 
     public static void main(String[] args) {
 
-        ProxyConfigHolder proxy = new ProxyConfigHolder(
-                new ProxyNetworkConfig("proxy.example.com", 8080),
-                new ProxyCredentials("user123", "pass123")
+        ProxyNetworkConfig networkConfig = new ProxyNetworkConfig("proxy.example.com", 8080);
+        ProxyCredentials credentials = new ProxyCredentials("user123", "pass123");
+        ProxyConfigHolder proxyConfig = new ProxyConfigHolder(networkConfig, credentials);
+
+        List<String> browserArguments = List.of(
+                "--no-sandbox",
+                "--disable-gpu",
+                "--window-size=1920,1080",
+                "--lang=ru"
         );
 
-        // Всё, что раньше шло позиционными аргументами в конструктор,
-        // теперь — пары ключ-значение через .set(...). Порядок не важен,
-        // ничего не перепутаешь, лишнее можно не указывать.
-        WebDriverConfig cfg = WebDriverConfig.builder()
-                .set("browserName",    "chrome")
-                .set("browserVersion", "latest")
-                .set("headless",       "true")
-                .set("implicitWait",   "10 sec")
-                .set("pageTimeout",    "30 sec")
-                .addArgument("--no-sandbox")
-                .addArgument("--disable-gpu")
-                .addArgument("--window-size=1920,1080")
-                .addArgument("--lang=ru")
-                .proxy(proxy)
-                .build();
+        WebDriverConfig webDriverConfig = new WebDriverConfig(
+                "chrome", "latest", true, 10, 30, proxyConfig, browserArguments
+        );
 
-        // --- ВЫВОД ---
+        ThreadPoolConfig poolConfig = new ThreadPoolConfig(4, 8, 60L, 100, "worker-");
+
+        Scenario scenario = new Scenario(1, "Login flow", List.of(
+                new Step(ActionType.CLICK, "#login-button", null),
+                new Step(ActionType.WAIT, null, "1500"),
+                new Step(ActionType.CLICK_BY_XPATH, "//input[@name='email']", null)
+        ));
 
         printHeader("WEBDRIVER CONFIGURATION");
 
-        // Скалярные настройки — один цикл по Map. Никаких 5 ручных printField.
         printSection("Browser Settings");
-        for (Map.Entry<String, String> e : cfg.getSettings().entrySet()) {
-            printField(e.getKey(), e.getValue());
-        }
+        printField("Browser Name",    webDriverConfig.getBrowserName());
+        printField("Browser Version", webDriverConfig.getBrowserVersion());
+        printField("Headless Mode",   String.valueOf(webDriverConfig.isHeadless()));
+        printField("Implicit Wait",   webDriverConfig.getImplicitWaitSeconds() + " sec");
+        printField("Page Timeout",    webDriverConfig.getPageLoadTimeoutSeconds() + " sec");
 
-        // Прокси-секции типизированные — через геттеры records.
         printSection("Proxy Network");
-        printField("Host", cfg.getProxyConfig().network().host());
-        printField("Port", String.valueOf(cfg.getProxyConfig().network().port()));
+        printField("Host", webDriverConfig.getProxyConfig().getNetworkConfig().getHost());
+        printField("Port", String.valueOf(webDriverConfig.getProxyConfig().getNetworkConfig().getPort()));
 
         printSection("Proxy Credentials");
-        printField("Username", cfg.getProxyConfig().credentials().username());
+        printField("Username", webDriverConfig.getProxyConfig().getCredentials().getUsername());
         printField("Password", "[PROTECTED]");
 
-        // Аргументы — цикл по списку.
         printSection("Browser Arguments");
-        if (cfg.getBrowserArguments().isEmpty()) {
-            printField("(none)", "");
-        } else {
-            for (String arg : cfg.getBrowserArguments()) {
-                printField("set", arg);
-            }
+        for (String arg : webDriverConfig.getBrowserArguments()) {
+            printField("arg", arg);
+        }
+
+        printSection("Thread Pool");
+        printField("Core Pool",       String.valueOf(poolConfig.getCorePoolSize()));
+        printField("Max Pool",        String.valueOf(poolConfig.getMaxPoolSize()));
+        printField("Keep Alive",      poolConfig.getKeepAliveTimeSeconds() + " sec");
+        printField("Queue Capacity",  String.valueOf(poolConfig.getQueueCapacity()));
+        printField("Name Prefix",     poolConfig.getThreadNamePrefix());
+
+        printSection("Scenario #" + scenario.getId() + " (" + scenario.getName() + ")");
+        for (Step s : scenario.getSteps()) {
+            String value = (s.getTarget() != null ? s.getTarget() : "")
+                    + (s.getValue() != null ? " [" + s.getValue() + "]" : "");
+            printField(s.getActionType().name(), value);
         }
 
         printFooter();
+
+        Publisher<String> publisher = new Publisher<>();
+        publisher.subscribe(m -> System.out.println("  [Sub A] got: " + m));
+        publisher.subscribe(m -> System.out.println("  [Sub B] got: " + m));
+        System.out.println("Publisher: subscribers = " + publisher.subscribersCount());
+        publisher.publish("Event #1");
+        publisher.publish("Event #2");
     }
 
     static void printHeader(String title) {
@@ -93,7 +113,6 @@ public class App {
         System.out.println();
     }
 
-    // Добавляет пробелы справа до нужной длины; длинное НЕ обрезает.
     static String padRight(String text, int length) {
         if (text.length() >= length) {
             return text;
