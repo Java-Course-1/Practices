@@ -30,7 +30,7 @@ public class App {
         );
 
         WebDriverConfig webDriverConfig = new WebDriverConfig(
-                "chrome", "latest", true, 10, 30, proxyConfig, browserArguments
+                "chrome", "latest", proxyConfig, browserArguments
         );
 
         ThreadPoolConfig poolConfig = new ThreadPoolConfig(4, 8, 60L, 100, "worker-");
@@ -46,9 +46,7 @@ public class App {
         printSection("Browser Settings");
         printField("Browser Name",    webDriverConfig.getBrowserName());
         printField("Browser Version", webDriverConfig.getBrowserVersion());
-        printField("Headless Mode",   String.valueOf(webDriverConfig.isHeadless()));
-        printField("Implicit Wait",   webDriverConfig.getImplicitWaitSeconds() + " sec");
-        printField("Page Timeout",    webDriverConfig.getPageLoadTimeoutSeconds() + " sec");
+
 
         printSection("Proxy Network");
         printField("Host", webDriverConfig.getProxyConfig().getNetworkConfig().getHost());

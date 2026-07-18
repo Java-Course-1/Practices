@@ -11,24 +11,15 @@ public class WebDriverConfig {
 
     private final String browserName;
     private final String browserVersion;
-    private final boolean headless;
-    private final int implicitWaitSeconds;
-    private final int pageLoadTimeoutSeconds;
     private final ProxyConfigHolder proxyConfig;
     private final List<String> browserArguments;
 
     public WebDriverConfig(String browserName,
                            String browserVersion,
-                           boolean headless,
-                           int implicitWaitSeconds,
-                           int pageLoadTimeoutSeconds,
                            ProxyConfigHolder proxyConfig,
                            List<String> browserArguments) {
         this.browserName = browserName;
         this.browserVersion = browserVersion;
-        this.headless = headless;
-        this.implicitWaitSeconds = implicitWaitSeconds;
-        this.pageLoadTimeoutSeconds = pageLoadTimeoutSeconds;
         this.proxyConfig = proxyConfig;
         this.browserArguments = browserArguments;
     }
@@ -39,18 +30,6 @@ public class WebDriverConfig {
 
     public String getBrowserVersion() {
         return browserVersion;
-    }
-
-    public boolean isHeadless() {
-        return headless;
-    }
-
-    public int getImplicitWaitSeconds() {
-        return implicitWaitSeconds;
-    }
-
-    public int getPageLoadTimeoutSeconds() {
-        return pageLoadTimeoutSeconds;
     }
 
     public ProxyConfigHolder getProxyConfig() {
@@ -66,9 +45,6 @@ public class WebDriverConfig {
         return "WebDriverConfig{"
                 + "browserName='" + browserName + '\''
                 + ", browserVersion='" + browserVersion + '\''
-                + ", headless=" + headless
-                + ", implicitWaitSeconds=" + implicitWaitSeconds
-                + ", pageLoadTimeoutSeconds=" + pageLoadTimeoutSeconds
                 + ", proxyConfig=" + proxyConfig
                 + ", browserArguments=" + browserArguments
                 + '}';
